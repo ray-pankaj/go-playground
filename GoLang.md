@@ -93,3 +93,32 @@ c.ii.field1  or c.field1 // No field field1 for c or ii
 c.Method1() // Works -> can be used for private vs public classifiers?
 ```
 
+## HTTP and things
+
+```go
+import "net/http"
+type myhandler struct {
+}
+func (h *myhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "42")
+}
+handler := new(myhandler)
+http.Handle("/endpoint", handler) // handler type needs to implement http.Handler interface (ServeHTTP method)
+http.ListenAndServe(8080, nil) // DefaultServeMux handler -> any other URL 404
+//TODO: Routing
+
+// Making external requests
+res, err := http.Get(url) // http.Response, Error
+defer res.Body.Close()
+data, err := ioutil.ReadAll(res.Body) // []byte, Error
+numBytes, err := io.Copy(outAsIOWriter, res.Body) // if large response -> buffered can be used to download large files (Streams data 32 kbytes at a time)
+res, err := http.Post(url, contenttype, bodyAsIOReader)
+// http.Get/Post/Head/PostForm wrapper around (http.Client.Get/*) -> where client is DefaultClient(0 value for http.Client)
+```
+
+- See: [gorilla-mux](https://github.com/gorilla/mux)
+
+- Good [Read](https://medium.com/rungo/creating-a-simple-hello-world-http-server-in-go-31c7fd70466e)
+
+
+
