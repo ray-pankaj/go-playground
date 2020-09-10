@@ -1,6 +1,7 @@
 package countingrequests
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -14,7 +15,15 @@ type countingHandler struct {
 	rdb *redis.Client
 }
 
+func (c *countingHandler) updateMyKey() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.n++
+}
+
 func (c *countingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	c.updateMyKey()
+	fmt.Fprintf(w, "%d\n", c.n)
 }
 
 func Init() {
