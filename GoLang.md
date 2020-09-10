@@ -57,3 +57,39 @@ func main() {
 - A type can implement multiple interfaces.
 - Inheritance can be achieved using embedding interfaces(same as types)
 
+## Inheritance(sort of)
+
+```go
+type parent1 struct {
+    field1 string
+}
+type parent2 struct {
+    field1 string
+}
+type parent3 struct {
+    field3 string
+}
+type ii interface() {
+    Method1() string
+}
+func (p parent1) Method string {
+    return p.field1()
+}
+type child struct {
+     // Also known as Embedding
+    ii
+    parent1
+    parent2
+    parent3
+    []parent1 //  Breaks -> Slice cannot be embedded anonymously
+    pars []parent1 // Correct
+    field2 string
+}
+c := child(parent1{"intefacestring1"}, parent1{"parstring1"}, parent2{"parstring2"}, parent3{"parstring3"}, "childstring")
+c.field1 // Incorrect -> ambiguous field
+c.parent1.field1 // Correct
+c.field3 // Works
+c.ii.field1  or c.field1 // No field field1 for c or ii
+c.Method1() // Works -> can be used for private vs public classifiers?
+```
+
