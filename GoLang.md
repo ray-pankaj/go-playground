@@ -122,3 +122,80 @@ res, err := http.Post(url, contenttype, bodyAsIOReader)
 
 
 
+## Defer/Panic/Recover
+
+```go
+// Arguments to deferred functions are evaluated at the time of defer statement evaluation
+i := 0
+defer fmt.Prinln(i) //Output: 0
+i++
+return
+
+//LIFO
+for i := 1; i <= 3; i++ {
+    defer fmt.Println(i) //Output: 321
+}
+func f() int {
+    def func() {return 5}()
+    return 1
+} // returns 1: Return value of deferrred functions is discarded
+
+// Deferred functions may read and assign to the returning function's named return values.
+func f() (i int) {
+    defer func() {i++} ()
+    return 1
+}
+// panic rescuing
+func f() {
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Println("panic handled", r, string(debug.Stack()))
+        }
+    }()
+    panic("panic attack!!!")
+}
+```
+
+- After panic is called, normal execution stops and already deferred functions are executed.
+
+## JSON
+
+```go
+import "encoding/json"
+type response2 struct {
+	Page   int      `json:"page"`
+	Fruits []string `json:"fruits"` //JSON tags See package reflect for StructTags
+    Withouttag string
+}
+mapD := &response2{
+    Page:   1,
+    Fruits: []string{"apple", "peach", "pear"}
+    Withouttag: "unTagged"
+}
+mapB, _ := json.Marshal(mapD)// keys are always strings (int converted to strings)
+//mapB, _ := json.MarshalIndent(mapD, "", "  ") pretty-print
+fmt.Printf("%T\n%v\n%#v\n", mapB, mapB, mapB) // []uint8, [123, 34], []byte{values}
+fmt.Println(string(mapB))// {"page": 1, "fruits": [values], "Withouttag": "unTagged"}
+var decodedJSON response2
+json.Unmarshal(mapB, &decodedJSON)
+fmt.Println(reflect.DeepEqual(decodedJSON, *mapD)) // true
+
+// Arbitrary JSON
+b := []byte(`{"Name":"Wednesday","Age":6,"Parents":["Gomez","Morticia"]}`)
+var f interface{}
+err := json.Unmarshal(b, &f) // map[string]interface{}{}
+m := f.(map[string]interface{})
+for k, v := range m {switch vv := v.(type){}} // type switch on json default types
+// {"Name": "Wednesday, "Age", 6 float64, "Parents"[]interface{}{"Gomez",...}}
+
+Encoding/Decoding Streams
+
+func NewDecoder(r io.Reader) *Decoder
+func NewEncoder(w io.Writer) *Encoder
+var m map[string]interface{}
+json.NewDecoder(os.Stdin/http.Request.Body/files).Decode(&m)
+
+```
+
+See [go-blog](https://blog.golang.org/json)
+
