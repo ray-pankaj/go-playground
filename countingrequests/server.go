@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"sync"
 
 	"github.com/go-redis/redis/v8"
@@ -33,10 +34,22 @@ func (c *countingHandler) updateRedisKey() int64 {
 }
 
 func (c *countingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c.updateMyKey()
 	var counter_from_redis int64
+
+	defer func() {
+		fmt.Println(*r)
+
+		if r := recover(); r != nil {
+			// log.Print("panic in updating counter\n", r, string(debug.Stack()))
+			// TODO: change fmt's to log.* and figure out levels
+			fmt.Println("panic in updating counter", r, string(debug.Stack()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "%d\n", counter_from_redis)
+	}()
+
 	counter_from_redis = c.updateRedisKey()
-	fmt.Fprintf(w, "%d\n", counter_from_redis)
 }
 
 func Init() {
