@@ -199,3 +199,96 @@ json.NewDecoder(os.Stdin/http.Request.Body/files).Decode(&m)
 
 See [go-blog](https://blog.golang.org/json)
 
+## Exporting identifiers
+
+```go
+package main
+
+import (
+	"fmt"
+	"play.ground/animals"
+)
+
+func main() {
+	dog := animals.Dog{
+		BarkStrength: 10,
+	}
+	dog.Age = 1
+	dog.SetName("dogname")
+	fmt.Printf("Counter: %#v\n%#v", dog, dog.GetName())
+}
+-- go.mod --
+module play.ground
+-- animals/animals.go --
+package animals
+
+// animal represents information about all animals.
+type animal struct {
+	name string // not exported to outer packages but can be embedded to types in the same package
+	Age  int // exported to outer packages if type can be exported
+}
+
+// Dog represents information about dogs.
+type Dog struct {
+	animal // this type and its fields will not be exported to outer packages but embedded to Dog
+	BarkStrength int
+}
+
+func (d *Dog) SetName(name string) {
+	d.name = name
+}
+func (d *Dog) GetName() string {
+	return d.name
+}
+
+```
+
+## Error Handling
+
+```go
+// Errors are values
+{val, err := Work()} * 100
+//Instead
+type errWorker {
+    w Worker
+    err Error
+}
+for errWorker.w.Work() {
+}
+if errWorker.err != nil {
+}
+// Similar to what bufio.Writer.Write + bufio.Writer.Flush and bufio.Scanner.Scan() + Scanner.Err()
+
+RandomConstantError := errors.New("random error")
+if err != RandomConstantError {
+}
+type MyError struct {
+    d Data
+    Err error // wrapping errors in errors Eg: os.PathError
+}
+func (e *MyError) Error() string {return errorAsString}
+var myerror error = &MyError{RandomConstantError}
+if err, ok := myerror.(*MyError); ok {
+    if err.Err == RandomConstantError {
+    }
+    if err2, ok2 := err.Err.(*MyError2); ok {
+    }
+    fmt.Println("this is my error")
+}
+//Go 1.13 stuff
+func (e *MyError) Unwrap() error { return e.Err}
+
+if errors.Is(myerror, RandomConstantError) {
+    //unwraps until inside error matches
+}
+var errorinside *MyError
+if errors.As(myerror, &errorinside){
+    //unwraps until type matches and assigns errorinside
+    errorinside.Error() == myerror.Err.Error() // true
+}
+
+```
+
+- [Intro](https://blog.golang.org/errors-are-values) Blog Post
+- See [fmt.Errorf](https://golang.org/src/fmt/errors.go?s=624:674#L7)
+- https://blog.golang.org/go1.13-errors
