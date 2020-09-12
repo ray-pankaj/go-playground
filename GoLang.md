@@ -287,8 +287,42 @@ if errors.As(myerror, &errorinside){
     errorinside.Error() == myerror.Err.Error() // true
 }
 
+wrapped := fmt.Errorf("wrapped error: %w", errorinside)
 ```
 
 - [Intro](https://blog.golang.org/errors-are-values) Blog Post
 - See [fmt.Errorf](https://golang.org/src/fmt/errors.go?s=624:674#L7)
 - https://blog.golang.org/go1.13-errors
+
+## Concurrency
+
+### Context
+
+```go
+type Context interface {
+    Done() <- chan struct{} //receive only
+    Err() error
+    Deadline() (deadle time.Time, ok bool)
+    Value(key interface{}) interface{}
+}
+func Background/WithCancel/WithDeadline(context, ...args) ... //deriving contexts from existing ones.
+type CancelFunc func()
+
+```
+
+- Done channel -> cancellation signal to all functions running "on behalf of the context".
+- `WithCancel/WithTimeout` contexts can be cancelled before the parent context.
+- Should be used in all incomingoutgoing requests -> gives easy control over cancellations/timeouts. See [http.Client.Do](https://golang.org/pkg/net/http/#Client.Do)
+- [Blog](https://blog.golang.org/context)
+
+### Select Statement
+
+```go
+select {
+case xc <- x:
+    //sent x on xc
+case y := <-yc:
+    //received y from yc
+}
+```
+
