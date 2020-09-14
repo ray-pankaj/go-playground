@@ -330,5 +330,106 @@ case <-quit:
     quit <- "Safe to exit"
     return
 }
+//timeout slow requests
+select {
+case val := <- c:
+case <-time.After(1 * time.Second):
+    // timed out
+}
+//Multiplex using select
+func Multiplex(in1, in2 <- chan string) {
+    c := make(chan string)
+    go func() {
+        for {
+            select {
+            case s:= in1:
+                c <- s
+            case s:= <-in2:
+                c <- s
+            }
+        }
+    }
+    return c
+}
+func Multiplex(inputs ... <- chan string) <- chan string{
+    cases := make([]reflect.SelectCase, len(inputs))
+    ch := make(chan string)
+    for i := range inputs {
+        cases[i] = reflect.SelectCase({
+            Dir: reflect.SelectRecv,
+            Chan: reflect.ValueOf(inputs[i])
+        })
+    }
+    go func() {
+        for {
+            chosenidx, valAsreflectDotValue, ok := reflect.Select(cases)
+            ch <- valAsreflectDotValue.String()
+        }
+    }()
+    return ch
+}
+
 ```
+
+- Evaluates all and invokes the first one ready to proceed, pseudo-random if multiple are ready. `default` if none are ready.
+
+### Channels
+
+```go
+ch := make(chan int)
+<-ch // receive
+ch <- 1 //send
+//Generator returns a read-only channel
+func Generator() <- chan string {
+    c := make(chan string)
+    go func() {
+        c <- 1
+    }()
+    return c
+}
+c1 := Generator(); c2 := Generator()
+for {
+    <-c1; <-c2;
+    // these are now lockstepped (even if generation on one is quicker both will be executed in order one by one)
+}
+// Multiplex channels to avoid lockstep for each channel
+func Multiplex(inputs ... <- chan string) <- chan string {
+    c := make(chan string)
+    for i := range inputs {
+        ch := inputs[i]
+        go func() {for { c <- <-ch}}()
+    }
+    return c
+}
+ch := Multiplex(Generator(), Generator())
+// Restore sequence
+// Add wait channel in the message that is listened to in the generator and sent values to by the consumer
+// Essentially, this stops further generation until the slowest generator is ready
+type Message struct{
+    msg string
+    wait chan bool
+}
+Generator() <-chan Message{
+    waitForIt := make(chan bool)
+    go func() {
+        c <- Message{1, waitForIt}
+        doSomeTimeTakingStuff()
+        <-waitForIt
+    }
+}
+ch := Multiplex(Generator(), Generator())
+for {
+    m1 := <-ch;
+    m2 := <-ch // * number of generators;
+    m1.wait <- true
+    m2.wait <- true
+}
+```
+
+- Sending/receiving is blocking. Channels communicate and synchronize with the same operation. Exception: **Buffered channels**.
+- TODO: Buffered channels
+- Generators: functions that returns channels
+- Multiplexing -> FanIn outputs of multiple channels using into one channel using goroutines to avoid locksteps. 
+- [Restoring](https://github.com/golang/talks/blob/master/content/2012/concurrency/support/sequenceboring.go) sequence
+- [Slides](https://talks.golang.org/2012/concurrency.slide#1) -> [Code](https://github.com/golang/talks/tree/master/content/2012/concurrency/support)
 
