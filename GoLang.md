@@ -323,6 +323,12 @@ case xc <- x:
     //sent x on xc
 case y := <-yc:
     //received y from yc
+default:
+    fmt.Println("No communication could happen")
+case <-quit:
+    teardown()
+    quit <- "Safe to exit"
+    return
 }
 ```
 
