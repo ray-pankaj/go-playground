@@ -120,7 +120,28 @@ res, err := http.Post(url, contenttype, bodyAsIOReader)
 
 - Good [Read](https://medium.com/rungo/creating-a-simple-hello-world-http-server-in-go-31c7fd70466e)
 
+### Templates
 
+```go
+import "html/template"
+Example Template
+"""edit.html
+<<h1>Editing {{.Title}}</h1>
+
+<form action="/save/{{.Title}}" method="POST">
+<div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
+<div><input type="submit" value="Save"></div>
+</form>
+"""
+data = &Data(Title: "This is a title", Body: []byte("This is the body"))
+t, _ = template.ParseFiles("edit.html")
+t.Execute(w, data)
+//Read All Templates at load
+template.Must(template.ParseFiles("view.html", "edit.html"))
+templates.ExecuteTemplate(w, "edit.html", data)
+```
+
+- [Doc Page](https://golang.org/doc/articles/wiki/final.go)
 
 ## Defer/Panic/Recover
 
@@ -193,7 +214,7 @@ Encoding/Decoding Streams
 func NewDecoder(r io.Reader) *Decoder
 func NewEncoder(w io.Writer) *Encoder
 var m map[string]interface{}
-json.NewDecoder(os.Stdin/http.Request.Body/files).Decode(&m)
+json.NewDecoder(os.Stdin/http.(Request/Response).Body/files).Decode(&m)
 
 ```
 
@@ -296,7 +317,9 @@ wrapped := fmt.Errorf("wrapped error: %w", errorinside)
 
 ## Concurrency
 
-### Context
+### Context:
+
+`context` package that makes it easy to pass request-scoped values, cancellation signals, and deadlines across API boundaries to all the goroutines involved in handling a request.
 
 ```go
 type Context interface {
@@ -305,7 +328,7 @@ type Context interface {
     Deadline() (deadle time.Time, ok bool)
     Value(key interface{}) interface{}
 }
-func Background/WithCancel/WithDeadline(context, ...args) ... //deriving contexts from existing ones.
+func Background/WithCancel/WithDeadline(context, args ...argType) ... //deriving contexts from existing ones.
 type CancelFunc func()
 
 ```
