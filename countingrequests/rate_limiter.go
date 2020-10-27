@@ -8,7 +8,9 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type RateLimitter struct {
+//TODO: Add Sliding window algorithm similar to: https://blog.cloudflare.com/counting-things-a-lot-of-different-things/
+
+type RateLimiter struct {
 	Rate          int
 	Period        time.Duration
 	LimitDuration time.Duration
@@ -34,7 +36,7 @@ end
 return {}
 `)
 
-func (rl *RateLimitter) isMitigatedClient(user_ip string) bool {
+func (rl *RateLimiter) isMitigatedClient(user_ip string) bool {
 	blockedKey := user_ip + "_blocked"
 	_, err := rdb.Get(ctx, blockedKey).Result()
 	if err != nil {
@@ -47,14 +49,15 @@ func (rl *RateLimitter) isMitigatedClient(user_ip string) bool {
 	return true
 }
 
-func (rl *RateLimitter) updateClientRequestCount(user_ip string) {
+func (rl *RateLimiter) updateClientRequestCount(user_ip string) {
+	//TODO: Make this testable
 	_, err := incrementScript.Run(ctx, rdb, []string{user_ip}, rl.Period.Seconds(), rl.Rate, rl.LimitDuration.Seconds()).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (rl *RateLimitter) rateLimitHandler(next http.Handler) http.Handler {
+func (rl *RateLimiter) rateLimitHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if rl.isMitigatedClient(r.Header.Get("X-Forwarded-For")) {
 			w.WriteHeader(http.StatusTooManyRequests)
